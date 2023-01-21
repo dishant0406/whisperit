@@ -99,7 +99,7 @@ const LoginPage = (props) => {
             </View>
             <Text style={styles.errortext}>{formState.password.errorMessage}</Text>
           </View>
-            <TouchableOpacity onPress={loginHandler} disabled={!formState.completeFormValid.value && loading}>
+            <TouchableOpacity onPress={loginHandler} disabled={!formState.completeFormValid.value && !loading}>
               <View style={(formState.completeFormValid.value && !loading)?styles.signupbutton:styles.disabledsignupbuttom}>
                 <Text style={styles.buttontext}>Login</Text>
               </View>
@@ -127,11 +127,19 @@ const styles = StyleSheet.create({
   logocont: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 10,
+    marginTop: 30,
     height:70,
   },
   logo: {
     width: 300,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.35,
+    shadowRadius: 1,
+
+    elevation: 2,
   },
   textcontainer: {
     alignItems: 'center',
@@ -186,6 +194,15 @@ const styles = StyleSheet.create({
     fontSize:17,
     fontFamily:'medium',
     marginTop:50,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.50,
+    shadowRadius: 5,
+
+    elevation: 2,
   },
   disabledsignupbuttom: {
     width:220,
@@ -198,6 +215,8 @@ const styles = StyleSheet.create({
     fontSize:17,
     fontFamily:'medium',
     marginTop:50,
+
+    elevation: 2,
   },
 
   buttontext: {

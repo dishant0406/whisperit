@@ -1,7 +1,30 @@
 import { auth, firebaseHelper } from "../firebase/firebase"
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { getDoc, getFirestore } from "firebase/firestore";
 import { collection, doc, setDoc } from "firebase/firestore";
+
+
+//get user information using userid
+export const getUser = async (userid) => {
+  try {
+    const app = firebaseHelper()
+    const db = getFirestore(app);
+    const usersRef = collection(db, "users");
+    const userDoc = doc(usersRef, userid);
+    const user = await getDoc(userDoc);
+    if (user.exists()) {
+      console.log(user.data())
+      return user.data()
+    } else {
+      return null
+    }
+  } catch (err) {
+    console.log(err)
+    let errMessage = 'Something went wrong'
+    throw new Error(errMessage)
+  }
+};
+
 
 
 
@@ -20,7 +43,8 @@ export const signup = async (email, password, name) => {
       fullname: name,
       email: email,
       photo: userCredential.user.photoURL,
-      userid: userCredential.user.uid
+      userid: userCredential.user.uid,
+      aboutme: ''
     });
 
 

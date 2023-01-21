@@ -4,12 +4,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import ChatListScreen from '../screens/ChatListScreen';
-import { View } from 'react-native';
+import { Image, View } from 'react-native';
 import ChatScreen from '../screens/ChatScreen';
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 import back from '../assets/back.png'
+import SettingPage from '../components/Auth/SettingsPage';
 
 
 const MainNavigation = () => {
@@ -20,10 +21,24 @@ const MainNavigation = () => {
         tabBarLabel: 'Chats',
         tabBarIcon: ({ color }) => <Ionicons name="ios-chatbubbles-outline" size={24} color={color} />
       }} component={ChatListScreen} />
-      <Tab.Screen name="Chat2" options={{
+      <Tab.Screen name="Settings" options={{
         tabBarLabel: 'Settings',
-        tabBarIcon: ({ color }) => <Ionicons name="ios-settings-outline" size={24} color={color} />
-      }} component={ChatScreen} />
+        headerShown:true,
+        headerTitleAlign:'center',
+        headerTitleStyle:{
+          color:'black',
+          fontSize:24,
+          fontFamily:'semi-bold'
+        },
+        //header background color to #f4f4f4
+        headerStyle:{
+          backgroundColor:'#f4f4f4'
+        },
+        headerTitle:'Settings',
+        headerShadowVisible:false,
+        tabBarIcon: ({ color }) => <Ionicons name="ios-settings-outline" size={24} color={color} />,
+
+      }} component={SettingPage} />
     </Tab.Navigator>
   }
 

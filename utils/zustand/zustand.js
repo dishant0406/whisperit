@@ -10,3 +10,15 @@ export const useAuthStore = create((set) => ({
   setUser: (user) => set({ user }),
 }));
 
+//global state to manage userDetails
+export const useUserDetailsStore = create((set) => ({
+  userDetails: {
+    fullname: null,
+    email: null,
+    photo: null,
+    userid: null,
+    aboutme: null
+  },
+  setUserDetails: (userDetails) => set({ userDetails }),
+}));
+

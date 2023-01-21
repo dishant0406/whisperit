@@ -5,10 +5,11 @@ import * as SplashScreen from 'expo-splash-screen'
 import { useCallback, useEffect, useState } from 'react';
 import * as Font from 'expo-font'
 import AppNavigator from './navigation/AppNavigator';
-import { useAuthStore } from './utils/zustand/zustand';
+import { useAuthStore, useUserDetailsStore } from './utils/zustand/zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getAuth, signInWithCustomToken } from 'firebase/auth';
 import { auth, firebaseHelper } from './utils/firebase/firebase';
+import { getUser } from './utils/authentication/signup';
 
 
 
@@ -19,6 +20,7 @@ export default function App() {
   const [appIsLoading, setAppIsLoaded] = useState(false)
   const [isLogined, setIsLogined] = useState(false)
   const { setUser } = useAuthStore()
+  const { setUserDetails } = useUserDetailsStore()
 
   useEffect(() => {
     (
@@ -31,6 +33,11 @@ export default function App() {
               'bold': require('./assets/fonts/Poppins-Bold.ttf'),
               'light': require('./assets/fonts/Poppins-Light.ttf'),
               'black': require('./assets/fonts/Poppins-Black.ttf'),
+              'thin': require('./assets/fonts/Poppins-Thin.ttf'),
+              'semi-bold': require('./assets/fonts/Poppins-SemiBold.ttf'),
+              'extra-bold': require('./assets/fonts/Poppins-ExtraBold.ttf'),
+              'extra-light': require('./assets/fonts/Poppins-ExtraLight.ttf'),
+
             })
 
           }
@@ -70,7 +77,21 @@ export default function App() {
                   token: parseUser.token,
                   user: parseUser.user
                 })
+                const userDetails = await getUser(userItem.uid)
+                if (userDetails) {
+                  setUserDetails(
+                    {
+                      fullname: userDetails.fullname,
+                      email: userDetails.email,
+                      photo: userDetails.photo,
+                      userid: userDetails.userid,
+                      aboutme: userDetails.aboutme
+                    }
+
+                  )
+                }
               }
+
             }
           })
         }
