@@ -6,13 +6,12 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { Ionicons } from '@expo/vector-icons';
 import SignupPage from '../components/Auth/SignupPage';
 import LoginPage from '../components/Auth/LoginPage';
+import AuthNavigation from '../navigation/AuthNavigation';
 
 const AuthScreen = (props) => {
-  const [isLogin, setIsLogin] = useState(true)
   return (
     <View style={styles.container}>
-      {isLogin?<LoginPage onPress={()=>setIsLogin(false)}/>:
-      <SignupPage onPress={()=>setIsLogin(true)}/>}
+      <AuthNavigation/>
     </View>
   )
 }

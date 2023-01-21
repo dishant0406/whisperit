@@ -1,18 +1,20 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { NavigationContainer } from '@react-navigation/native';
 import MainNavigation from './MainNavigation';
 import AuthScreen from '../screens/AuthScreen';
+import { useAuthStore } from '../utils/zustand/zustand';
+import { auth } from '../utils/firebase/firebase';
 
 
 
 
 const AppNavigator = () => {
-  const [isAuth, setisAuth] = useState(false)
+  const {user} = useAuthStore()
 
 
   return (
     <NavigationContainer>
-        {isAuth?<MainNavigation/>:<AuthScreen/>}
+        {(user.userid)?<MainNavigation/>:<AuthScreen/>}
       </NavigationContainer>
   )
 }
