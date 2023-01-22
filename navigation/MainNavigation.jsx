@@ -11,14 +11,16 @@ const Tab = createBottomTabNavigator();
 
 import back from '../assets/back.png'
 import SettingPage from '../components/Auth/SettingsPage';
+import NewChatScreen from '../screens/NewChatScreen';
 
 
 const MainNavigation = () => {
 
   const TabNavigate = () => {
-    return <Tab.Navigator screenOptions={{ headerShown: false }}>
+    return <Tab.Navigator>
       <Tab.Screen name="Home" options={{
         tabBarLabel: 'Chats',
+        headerTitle:'',
         tabBarIcon: ({ color }) => <Ionicons name="ios-chatbubbles-outline" size={24} color={color} />
       }} component={ChatListScreen} />
       <Tab.Screen name="Settings" options={{
@@ -45,29 +47,39 @@ const MainNavigation = () => {
   return (
     
         <Stack.Navigator>
-          <Stack.Screen name="Tab" component={TabNavigate} options={{ headerShown: false }} />
-          <Stack.Screen name="Chat" component={ChatScreen} options={{
-            //three dot context menu
-            headerShown: true,
-            headerTitle: '',
-            headerTitleAlign: 'center',
-            
-            headerTitleStyle: {
-              color: 'black',
-              fontSize: 20,
-              fontFamily:'regular'
-            },
+          <Stack.Group>
+            <Stack.Screen name="Tab" component={TabNavigate} options={{ headerShown: false }} />
+              <Stack.Screen name="Chat" component={ChatScreen} options={{
+                //three dot context menu
+                headerShown: true,
+                headerTitle: '',
+                headerTitleAlign: 'center',
+                
+                headerTitleStyle: {
+                  color: 'black',
+                  fontSize: 20,
+                  fontFamily:'regular'
+                },
+              headerBackTitle:'',
+              headerBackTitleVisible:false,
 
-           headerBackImageSource : back,
-           headerBackTitle:'',
+                headerRight: () => (
+                  <View style={{ flexDirection: 'row', marginRight: 10 }}>
+                    <Ionicons name="ios-ellipsis-vertical-sharp" size={24} color="black" />
+                  </View>
+                ),
+                headerStyle: {
+                  backgroundColor: '#f4f4f4',
+                },
+                headerShadowVisible: false,
 
-            headerRight: () => (
-              <View style={{ flexDirection: 'row', marginRight: 10 }}>
-                <Ionicons name="ios-ellipsis-vertical-sharp" size={24} color="black" />
-              </View>
-            )
-
-          }}/>
+              }}/>
+          </Stack.Group>
+          <Stack.Group screenOptions={{
+            presentation: 'containedModal', 
+          }}>
+            <Stack.Screen name="AddChat" component={NewChatScreen} /> 
+          </Stack.Group>
         </Stack.Navigator>
       
   )

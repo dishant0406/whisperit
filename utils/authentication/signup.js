@@ -13,7 +13,6 @@ export const getUser = async (userid) => {
     const userDoc = doc(usersRef, userid);
     const user = await getDoc(userDoc);
     if (user.exists()) {
-      console.log(user.data())
       return user.data()
     } else {
       return null
@@ -44,8 +43,11 @@ export const signup = async (email, password, name) => {
       email: email,
       photo: userCredential.user.photoURL,
       userid: userCredential.user.uid,
-      aboutme: ''
+      aboutme: '',
+      nameslug: name.toLowerCase()
     });
+
+
 
 
 

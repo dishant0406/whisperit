@@ -7,8 +7,8 @@ import { Ionicons } from '@expo/vector-icons';
 import ProgressLoader from 'rn-progress-loader';
 import { inputValidation } from '../../utils/validation/inputValidation';
 import { AuthReducer } from '../../utils/reducer/reducer';
-import { signup } from '../../utils/authentication/signup';
-import { useAuthStore } from '../../utils/zustand/zustand';
+import { getUser, signup } from '../../utils/authentication/signup';
+import { useAuthStore, useUserDetailsStore } from '../../utils/zustand/zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
@@ -38,6 +38,7 @@ const SignupPage = (props) => {
   const [showPass, setShowPass] = useState(false)
   const [formState, dispatchFormState] = useReducer(AuthReducer, inititalValue)
   const {setUser} = useAuthStore()
+  const {setUserDetails} = useUserDetailsStore()
   const [loading, setLoading] = useState(false)
 
   const inputChangeHandler = useCallback((type, text)=>{
@@ -54,6 +55,21 @@ const SignupPage = (props) => {
         token: response.user.stsTokenManager.accessToken,
         user: response.user,
       })
+
+      const userDetails = await getUser(response.user.uid)
+        if (userDetails) {
+          setUserDetails(
+            {
+              fullname: userDetails.fullname,
+              email: userDetails.email,
+              photo: userDetails.photo,
+              userid: userDetails.userid,
+              aboutme: userDetails.aboutme
+            }
+
+          )
+        }
+
       await AsyncStorage.setItem('user', JSON.stringify({
         userid: response.user.uid,
         token: response.user.stsTokenManager.accessToken,

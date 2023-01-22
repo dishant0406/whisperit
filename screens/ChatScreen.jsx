@@ -2,12 +2,23 @@ import { View, Text, StyleSheet, Image, TextInput, Dimensions, ScrollView, Scrol
 import { Feather } from '@expo/vector-icons';
 import { Ionicons } from '@expo/vector-icons';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
 import KeyboardStickyView from 'rn-keyboard-sticky-view';
 import avatar from '../assets/avatar.png'
 
-const ChatScreen = () => {
+const ChatScreen = (props) => {
+
+  useEffect(()=>{
+    props.navigation.setOptions({
+      headerLeft: () => (
+        <TouchableOpacity onPress={()=>props.navigation.goBack()} style={{ flexDirection: 'row', marginLeft: 10, padding:5,paddingHorizontal:6, backgroundColor:'#fff', borderRadius:10 }}>
+          <Ionicons name="chevron-back-sharp" size={24} color="black" />
+        </TouchableOpacity>
+      ),
+    })
+  },[])
+
   const [messageText, setMessageText] = useState('')
   return (
     <KeyboardAvoidingView style={{flex:1}} behavior={Platform.OS==='ios'?'padding':undefined} keyboardVerticalOffset={90}>
@@ -83,7 +94,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   header: {
-    backgroundColor: '#fff',
+    backgroundColor: '#f4f4f4',
     flexDirection: 'row',
     width:'100%',
     height: 90,
@@ -103,7 +114,7 @@ const styles = StyleSheet.create({
 
   },
   footer: {
-    backgroundColor: '#fff',
+    backgroundColor: '#f4f4f4',
     flexDirection: 'row',
     width:'100%',
     minHeight: 90,
@@ -161,7 +172,7 @@ const styles = StyleSheet.create({
   },
   input: {
     minHeight: 50,
-    backgroundColor: '#f1f3f4',
+    backgroundColor: '#fff',
     borderRadius: 25,
     paddingLeft: 20,
     paddingRight: 50,
@@ -197,7 +208,7 @@ const styles = StyleSheet.create({
     flex:1,
     paddingTop:10,
     paddingBottom:10,
-    backgroundColor: '#fafafa',
+    backgroundColor: '#f4f4f4',
     flexDirection:'column',
     //more chats should scroll and the height should be the remaing height after header and footer
     height: Dimensions.get('window').height - 180,

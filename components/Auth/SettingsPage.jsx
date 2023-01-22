@@ -10,6 +10,7 @@ import ProgressLoader from 'rn-progress-loader';
 import { getAuth, createUserWithEmailAndPassword, updateEmail } from "firebase/auth";
 import { getDoc, getFirestore } from "firebase/firestore";
 import { collection, doc, setDoc } from "firebase/firestore";
+import { pickImage, uploadImage } from '../../utils/ImagePicker/ImagePickerHelper';
 
 
 const InputField = ({defaultValue, icon, type})=>{
@@ -53,6 +54,7 @@ const InputField = ({defaultValue, icon, type})=>{
         const userRef = doc(db, "users", auth.currentUser.uid);
         await setDoc(userRef, {
           fullname: value,
+          nameslug:value.toLowerCase()
         }, { merge: true });
         setUserDetails({...userDetails, fullname:value})
       }
@@ -113,34 +115,54 @@ const SettingPage = () => {
   const {user} = useAuthStore()
   const [userObject, setUserObject] = useState({})
   const [loading, setLoading] = useState(false)
-  const {userDetails} = useUserDetailsStore()
+  const {userDetails,setUserDetails} = useUserDetailsStore()
 
-  if(loading){
-    return (
-      <View style={{flex:1, justifyContent:'center', alignItems:'center'}}>
-         <ProgressLoader
-                visible={loading}
-                color={"#FFFFFF"} />
-      </View>
-    )
+  const handleImagePick = async ()=>{
+    try{
+      
+      const res = await pickImage()
+      setLoading(true)
+      if(res){
+        const url = await uploadImage(res[0].uri)
+        if(!url){
+          Alert.alert('Error', 'Could not upload Image')
+        }
+        else{
+          const db = getFirestore();
+          const userRef = doc(db, "users", auth.currentUser.uid);
+          await setDoc(userRef, {
+            photo: url,
+          }, { merge: true });
+          setUserDetails({...userDetails, photo:url})
+        }
+      }
+    }catch(err){
+      Alert.alert('Error', 'Could not upload Image')
+    }
+    setLoading(false)
   }
   return (
     <ScrollView>
+      {loading && <ProgressLoader
+                visible={loading}
+                color={"#FFFFFF"} />}
     <View style={styles.container}>
-      <View style={{width:'100%', alignItems:'center'}}>
+      <View style={{width:'100%', alignItems:'center', position:'relative'}}>
         <View style={styles.profileCont}>
-          <Image source={avatar} style={styles.profileImg}/>
-          <TouchableOpacity style={styles.profileEdit}>
+          <Image source={userDetails.photo?{uri:userDetails.photo}:avatar} style={styles.profileImg}/>
+        </View>
+          <TouchableOpacity onPress={handleImagePick} style={styles.profileEdit}>
             <Octicons name="pencil" size={18} color="black" />
           </TouchableOpacity>
-        </View>
         <Text style={styles.profilename}>{userDetails.fullname||'Full Name'}</Text>
       </View>
       <View style={{width:'100%', alignItems:'center',}}>
+
         <InputField type='fullname' icon={<FontAwesome5 name="user" size={24} color="#5b647e" />} defaultValue={userDetails.fullname||'Full Name'}/>
         <InputField type='email' icon={<Ionicons name="mail-open" size={28} color="#5b647e" />} defaultValue={userDetails.email||'example@example.com'}/>
         <InputField type='aboutme' icon={<Ionicons name="ios-information-circle-outline" size={28} color="#5b647e" />} defaultValue={userDetails.aboutme||'About me!'}/>
         <Logout/>
+        
       </View>
     </View>
     </ScrollView>
@@ -162,10 +184,10 @@ const styles = StyleSheet.create({
     width:150,
     borderRadius:100,
     backgroundColor: '#00d4ff',
-    borderColor:'#101010',
-    borderWidth:3,
+
     resizeMode:'cover',
-    position:'relative'
+
+    overflow:'hidden'
   },
   profileImg: {
     width: 150,
@@ -183,8 +205,8 @@ const styles = StyleSheet.create({
   },
   profileEdit: {
     position:'absolute',
-    right:0,
-    bottom:0,
+    right:'30%',
+    bottom:'30%',
     height:30,
     width:30,
     alignItems:'center',
