@@ -2,6 +2,10 @@ import { auth, firebaseHelper } from "../firebase/firebase"
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
 import { getDoc, getFirestore } from "firebase/firestore";
 import { collection, doc, setDoc } from "firebase/firestore";
+import { Buffer } from 'buffer'
+import axios from "axios";
+import { getDownloadURL, getStorage, ref, uploadBytesResumable, uploadString, uploadBytes } from "firebase/storage";
+import uuid from 'react-native-uuid';
 
 
 //get user information using userid
@@ -37,11 +41,12 @@ export const signup = async (email, password, name) => {
     //save the userid fullname email photo to collection users with id as userid
     const db = getFirestore(app);
     const usersRef = collection(db, "users");
+    const photo = `https://api.dicebear.com/5.x/big-ears-neutral/png?seed=${userCredential.user.uid}}`
 
     const data = await setDoc(doc(usersRef, userCredential.user.uid), {
       fullname: name,
       email: email,
-      photo: userCredential.user.photoURL,
+      photo: photo,
       userid: userCredential.user.uid,
       aboutme: '',
       nameslug: name.toLowerCase()

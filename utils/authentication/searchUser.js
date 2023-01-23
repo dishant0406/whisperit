@@ -1,6 +1,6 @@
 
 import { collection, doc, getDocs, getFirestore, query, where } from 'firebase/firestore';
-import { firebaseHelper } from '../firebase/firebase';
+import { auth, firebaseHelper } from '../firebase/firebase';
 
 //search all the users in firebase document where nameslug matches with the passed string
 export const searchUser = async (searchString) => {
@@ -16,6 +16,9 @@ export const searchUser = async (searchString) => {
     users.push(doc.data())
   }
   );
-  return users
+
+  //remove the logined user from the list
+  const returnUsers = users.filter((user) => user.userid !== auth.currentUser.uid)
+  return returnUsers
 
 }

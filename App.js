@@ -10,11 +10,17 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getAuth, signInWithCustomToken } from 'firebase/auth';
 import { auth, firebaseHelper } from './utils/firebase/firebase';
 import { getUser } from './utils/authentication/signup';
-
+import { decode } from 'base-64';
 
 
 SplashScreen.preventAutoHideAsync();
 // AsyncStorage.clear()
+
+
+
+if (typeof atob === 'undefined') {
+  global.atob = decode;
+}
 
 export default function App() {
   const [appIsLoading, setAppIsLoaded] = useState(false)

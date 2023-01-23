@@ -1,4 +1,4 @@
-import { Button, Dimensions, Image, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, Button, Dimensions, FlatList, Image, StyleSheet, Text, View } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import { HeaderButton, HeaderButtons, Item } from 'react-navigation-header-buttons'
 import { Feather, Ionicons } from '@expo/vector-icons';
@@ -15,18 +15,24 @@ const CustomHeaderButton = props =>{
 }
 
 const NotAvailable = ({title, image, desc})=>{
-  return <View style={{flex:1, justifyContent:'center',alignItems:'center'}}>
+  return <ScrollView style={{flex:1,width:'100%', 
+  height:Dimensions.get('window').height-200,
+  }}>
+    <View style={{flex:1, justifyContent:'center',alignItems:'center',height:Dimensions.get('window').height-200}}>
             <View style={styles.notfound}>
               <Text style={{fontSize:24, fontFamily:'semi-bold', color:'#101010'}}>{title}</Text>
               <Text style={{fontSize:20, fontFamily:'semi-bold', color:'#9a9691', textAlign:'center', width:'80%'}}>{desc}</Text>
               <Image source={image} style={{width:100, height:100}}/>
             </View>
         </View>
+  </ScrollView>
 }
+
 
 const NewChatScreen = (props) => {
   const [searchValue, setSearchValue] = useState('')
   const [searchResult, setSearchResult] = useState([])
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     props.navigation.setOptions({
@@ -53,13 +59,17 @@ const NewChatScreen = (props) => {
     },[])
 
     useEffect(()=>{
+       setLoading(true)
       const searchTimeout = setTimeout(async ()=>{
         if(searchValue!==''){
+          
           const data = await searchUser(searchValue)
           setSearchResult(data)
           console.log(data)
+          setLoading(false)
         }else{
           setSearchResult([])
+          setLoading(false)
         }
       },500)
 
@@ -70,7 +80,6 @@ const NewChatScreen = (props) => {
     },[searchValue])
 
   return (
-    <ScrollView>
       <View style={styles.container}>
         <View style={{width:'90%', position:'relative'}}>
           <View style={styles.icon}>
@@ -79,13 +88,37 @@ const NewChatScreen = (props) => {
           <TextInput value={searchValue} onChangeText={text=>setSearchValue(text)} style={styles.input} placeholder={'Search for users'}/>
         </View>
         <View style={{flex:1,width:'100%', 
-        height:Dimensions.get('window').height-200
+        height:Dimensions.get('window').height-200,
         }}>
           {searchValue===''&&<NotAvailable desc={'Type somthing to search the user according to the string'} title={'Search for users'} image={up} />}
-          {searchValue!==''&& searchResult.length<1 &&<NotAvailable desc={'No user found with the given string, try searching for some other user'} title={'No user found'} image={down} />}
+          {searchValue!==''&& searchResult.length<1 && !loading &&<NotAvailable desc={'No user found with the given string, try searching for some other user'} title={'No user found'} image={down} />}
+          {searchValue!=='' &&loading && (
+                <View style={{flex:1, justifyContent:'center',alignItems:'center',height:Dimensions.get('window').height-200}}>
+                <ActivityIndicator size="large" />
+              </View>
+          )}
+           {searchValue!=='' && searchResult.length>0 && !loading && (
+            <View style={{flex:1, width:'100%', alignItems:'center'}}>
+              <View style={{flex:1, width:'90%'}}>
+                <FlatList data={searchResult} renderItem={({item})=>{
+                  return (
+                    <View style={styles.useritem}>
+                      <View style={styles.useravatar}>
+                        <Image source={{uri:item.photo}} style={styles.avatar}/>
+                      </View>
+                      <View style={styles.userinfo}>
+                        <Text numberOfLines={1} style={styles.username}>{item.fullname}</Text>
+                        <Text numberOfLines={1} style={styles.useremail}>{item.email}</Text>
+                      </View>
+                    </View>
+                  )
+                }} keyExtractor={item=>item.userid}/>
+              </View>
+            </View>
+          )}
         </View>
       </View>
-    </ScrollView>
+
   )
 }
 
@@ -133,5 +166,56 @@ const styles = StyleSheet.create({
     paddingTop:40,
     alignItems:'center'
 
+  },
+  useritem:{
+    width:'100%',
+    height:80,
+    backgroundColor:'#fff',
+    borderRadius:10,
+    flexDirection:'row',
+    alignItems:'center',
+    marginBottom:10,
+    //shadow
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+
+    elevation: 5,
+  },
+  useravatar:{
+    width:'20%',
+    height:'100%',
+    justifyContent:'center',
+    alignItems:'center',
+    marginLeft:10
+  },
+  avatar:{
+    width:60,
+    height:60,
+    borderRadius:30
+  },
+  userinfo:{
+    width:'80%',
+    height:'100%',
+    justifyContent:'center',
+    paddingLeft:10
+  },
+  username:{
+    fontSize:18,
+    fontFamily:'semi-bold',
+    color:'#000',
+    width:'80%'
+  },
+  useremail:{
+    fontSize:16,
+    fontFamily:'regular',
+    color:'#989898',
+    width:'80%'
   }
+
+
 })
