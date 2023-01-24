@@ -6,8 +6,32 @@ import React, { useEffect, useState } from 'react'
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
 import KeyboardStickyView from 'rn-keyboard-sticky-view';
 import avatar from '../assets/avatar.png'
+import { useSelectedUserStore } from '../utils/zustand/zustand';
+import down from '../assets/thumbdown.png'
+import { auth, firebaseHelper } from '../utils/firebase/firebase';
+import { addDoc, collection, doc, getFirestore, setDoc } from 'firebase/firestore';
+import uuid from 'react-native-uuid';
+import { createChat } from '../utils/authentication/createChat';
+
+
+const NotAvailable = ({title, image, desc})=>{
+  return <ScrollView style={{flex:1,width:'100%', 
+  height:Dimensions.get('window').height-200,
+  }}>
+    <View style={{flex:1, justifyContent:'center',alignItems:'center',height:Dimensions.get('window').height-200}}>
+            <View style={styles.notfound}>
+              <Text style={{fontSize:24, fontFamily:'semi-bold', color:'#101010'}}>{title}</Text>
+              <Text style={{fontSize:20, fontFamily:'semi-bold', color:'#9a9691', textAlign:'center', width:'80%'}}>{desc}</Text>
+              <Image source={image} style={{width:100, height:100}}/>
+            </View>
+        </View>
+  </ScrollView>
+}
 
 const ChatScreen = (props) => {
+  const [chatid, setChatId] = useState(props.route?.params?.chatid)
+  const {selectedUser} = useSelectedUserStore()
+  const [chatUsers, setChatUsers] = useState([])
 
   useEffect(()=>{
     props.navigation.setOptions({
@@ -19,6 +43,28 @@ const ChatScreen = (props) => {
     })
   },[])
 
+  //chatusers from params
+  const chatusers = props.route?.params?.chatusers
+
+  useEffect(()=>{
+    if(chatusers){
+      console.log(chatusers)
+      setChatUsers(chatusers)
+    }
+
+  },[props.route?.params])
+
+  const handleSend = async ()=>{
+   if(!chatid){
+    const newchatid = await createChat(auth.currentUser.uid, chatUsers)
+    setChatId(newchatid)
+    setMessageText('')
+  }
+
+  }
+
+  
+
   const [messageText, setMessageText] = useState('')
   return (
     <KeyboardAvoidingView style={{flex:1}} behavior={Platform.OS==='ios'?'padding':undefined} keyboardVerticalOffset={90}>
@@ -27,10 +73,10 @@ const ChatScreen = (props) => {
       <View style={styles.header}>
         <View style={styles.titleheader}>
           <View style={styles.icon}>
-              <Image source={avatar} style={styles.avatar}/>
+              <Image source={selectedUser.photo ?{uri:selectedUser.photo}: avatar} style={styles.avatar}/>
             </View>
             <View style={styles.headertitle}>
-              <Text style={styles.headername}>Henna Beck</Text>
+              <Text style={styles.headername}>{selectedUser.fullname || 'User'}</Text>
               <Text style={styles.status}>Online</Text>
             </View>
           </View>
@@ -38,7 +84,7 @@ const ChatScreen = (props) => {
             <Feather name="search" size={24} color="#5f6368" />
           </TouchableOpacity>
       </View>
-      <KeyboardAwareScrollView scrollEnabled={true} style={styles.body}>
+      {chatid && <KeyboardAwareScrollView scrollEnabled={true} style={styles.body}>
         <View style={styles.senderchatholder}>
           <View style={styles.senderchat}>
             <Text style={styles.chatText}>Hi Henna How are you</Text>
@@ -59,7 +105,8 @@ const ChatScreen = (props) => {
             <Text style={styles.chatText}> Lorem ipsum dolor sit amet consectetur adipisicing elit. At debitis esse porro a commodi provident, consequatur expedita, voluptatem nihil cum aspernatur recusandae qui eaque? Commodi, explicabo! Praesentium excepturi eaque tempora.</Text>
           </View>
         </View>
-      </KeyboardAwareScrollView>
+      </KeyboardAwareScrollView>}
+      {!chatid && <NotAvailable title='Start whispering...' image={down} desc='You have no chat with this user, write a new message to chat'/>}
         
         
 
@@ -75,7 +122,7 @@ const ChatScreen = (props) => {
             <MaterialCommunityIcons name="sticker-circle-outline" size={24} color="#989b9d" />
           </TouchableOpacity>
         </View>
-        <TouchableOpacity onPress={()=>console.log('mic')} style={styles.mic}>
+        <TouchableOpacity onPress={messageText!==''?handleSend:()=>{}} style={styles.mic}>
           {messageText===''?<Ionicons name="ios-mic-outline" size={28} color="#62666b" />:
           <Ionicons name="ios-send-outline" size={28} color="#62666b" />}
         </TouchableOpacity>
@@ -150,7 +197,8 @@ const styles = StyleSheet.create({
     marginLeft:20,
     flexDirection:'row',
     justifyContent:'center',
-    alignItems:'center'
+    alignItems:'center',
+    overflow:'hidden'
   },
   headertitle: {
     marginLeft: 20,
@@ -257,6 +305,27 @@ const styles = StyleSheet.create({
     flexDirection:'row',
     justifyContent:'center',
     alignItems:'center'
+  },
+  notfound:{
+    width:'80%',
+    marginTop:-70,
+    height:300,
+    backgroundColor:'#fff',
+    borderRadius:25,
+    //shadow
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+
+    elevation: 5,
+    justifyContent:'flex-start',
+    paddingTop:40,
+    alignItems:'center'
+
   },
 
 

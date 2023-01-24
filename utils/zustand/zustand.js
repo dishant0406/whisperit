@@ -22,3 +22,20 @@ export const useUserDetailsStore = create((set) => ({
   setUserDetails: (userDetails) => set({ userDetails }),
 }));
 
+//global state to manage selectedUser to chat with
+export const useSelectedUserStore = create((set) => ({
+  selectedUser: {
+    fullname: null,
+    email: null,
+    photo: null,
+    userid: null,
+    aboutme: null
+  },
+  setSelectedUser: (selectedUser) => set({ selectedUser }),
+}));
+
+//global state to manage all the users I have chatted with in past
+export const useUsersChatsStore = create((set) => ({
+  usersChats: [],
+  setUsersChats: (usersChats) => set({ usersChats }),
+}));

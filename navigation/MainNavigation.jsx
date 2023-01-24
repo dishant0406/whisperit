@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { Ionicons } from '@expo/vector-icons';
 
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -12,37 +12,87 @@ const Tab = createBottomTabNavigator();
 import back from '../assets/back.png'
 import SettingPage from '../components/Auth/SettingsPage';
 import NewChatScreen from '../screens/NewChatScreen';
+import { collection, doc, getDoc, getFirestore, onSnapshot } from 'firebase/firestore';
+import { auth, firebaseHelper } from '../utils/firebase/firebase';
+import { useUsersChatsStore } from '../utils/zustand/zustand';
+
+
+const TabNavigate = () => {
+  return <Tab.Navigator>
+    <Tab.Screen name="Home" options={{
+      tabBarLabel: 'Chats',
+      headerTitle:'',
+      tabBarIcon: ({ color }) => <Ionicons name="ios-chatbubbles-outline" size={24} color={color} />
+    }} component={ChatListScreen} />
+    <Tab.Screen name="Settings" options={{
+      tabBarLabel: 'Settings',
+      headerShown:true,
+      headerTitleAlign:'center',
+      headerTitleStyle:{
+        color:'black',
+        fontSize:24,
+        fontFamily:'semi-bold'
+      },
+      //header background color to #f4f4f4
+      headerStyle:{
+        backgroundColor:'#f4f4f4'
+      },
+      headerTitle:'Settings',
+      headerShadowVisible:false,
+      tabBarIcon: ({ color }) => <Ionicons name="ios-settings-outline" size={24} color={color} />,
+
+    }} component={SettingPage} />
+  </Tab.Navigator>
+}
 
 
 const MainNavigation = () => {
+  const unsubarray = []
+  const {setUsersChats, usersChats} = useUsersChatsStore()
 
-  const TabNavigate = () => {
-    return <Tab.Navigator>
-      <Tab.Screen name="Home" options={{
-        tabBarLabel: 'Chats',
-        headerTitle:'',
-        tabBarIcon: ({ color }) => <Ionicons name="ios-chatbubbles-outline" size={24} color={color} />
-      }} component={ChatListScreen} />
-      <Tab.Screen name="Settings" options={{
-        tabBarLabel: 'Settings',
-        headerShown:true,
-        headerTitleAlign:'center',
-        headerTitleStyle:{
-          color:'black',
-          fontSize:24,
-          fontFamily:'semi-bold'
-        },
-        //header background color to #f4f4f4
-        headerStyle:{
-          backgroundColor:'#f4f4f4'
-        },
-        headerTitle:'Settings',
-        headerShadowVisible:false,
-        tabBarIcon: ({ color }) => <Ionicons name="ios-settings-outline" size={24} color={color} />,
+  useEffect(()=>{
+    const app = firebaseHelper()
+    //save the userid fullname email photo to collection users with id as userid
+    const db = getFirestore(app);
+    const unsub = onSnapshot(doc
+      (db, "usersChats", auth.currentUser.uid), (doc1) => {
+      const chatIdsData = doc1.data()  || {}
+      const chatIds = Object.values(chatIdsData)
+      const chatDataLocal = []
+      const usersData = []
 
-      }} component={SettingPage} />
-    </Tab.Navigator>
-  }
+      chatIds.forEach(chatId=>{
+        const unsub2 = onSnapshot(doc(db, "chats", chatId), (doc2) => {
+          const chatData = doc2.data() || {}
+          const chat = {id:doc2.id,...chatData}
+          chatDataLocal.push(chat)
+          chat.users.forEach(async (e)=>{
+            if(e!==auth.currentUser.uid){
+              const chatref = collection(db, "users");
+              const userDoc = doc(chatref, e);
+              const userDocData = await getDoc(userDoc);
+              const userData = userDocData.data() || {}
+              usersData.push(userData)
+            }
+          })
+        })
+        unsubarray.push(unsub2)
+
+        }
+      )
+
+      setUsersChats(usersData)
+
+
+       
+    });
+
+    unsubarray.push(unsub)
+
+    return ()=>{
+      unsubarray.forEach(unsub=>unsub())
+    }
+  },[])
 
   return (
     

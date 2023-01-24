@@ -2,6 +2,7 @@ import { Button, StyleSheet, Text, View } from 'react-native'
 import React, { useEffect } from 'react'
 import { HeaderButton, HeaderButtons, Item } from 'react-navigation-header-buttons'
 import { Ionicons } from '@expo/vector-icons';
+import { auth } from '../utils/firebase/firebase';
 
 
 const CustomHeaderButton = props =>{
@@ -34,6 +35,15 @@ const ChatListScreen = (props) => {
 
     });
     })
+
+    useEffect(()=>{
+      //userid from the params
+      const userid = props.route?.params?.userid
+      if(userid){
+        const chatusers = [userid, auth.currentUser.uid]
+        props.navigation.navigate('Chat',{chatusers})
+      }
+    },[props.route?.params])
 
   return (
     <View style={styles.container}>

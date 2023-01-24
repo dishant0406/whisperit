@@ -1,4 +1,4 @@
-import { ActivityIndicator, Button, Dimensions, FlatList, Image, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, Button, Dimensions, FlatList, Image, StyleSheet, Text, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import { HeaderButton, HeaderButtons, Item } from 'react-navigation-header-buttons'
 import { Feather, Ionicons } from '@expo/vector-icons';
@@ -6,6 +6,7 @@ import { ScrollView, TextInput } from 'react-native-gesture-handler';
 import up from '../assets/thumbup.png'
 import down from '../assets/thumbdown.png'
 import { searchUser } from '../utils/authentication/searchUser';
+import { useSelectedUserStore } from '../utils/zustand/zustand';
 
 
 const CustomHeaderButton = props =>{
@@ -33,6 +34,7 @@ const NewChatScreen = (props) => {
   const [searchValue, setSearchValue] = useState('')
   const [searchResult, setSearchResult] = useState([])
   const [loading, setLoading] = useState(false)
+  const {setSelectedUser} = useSelectedUserStore()
 
   useEffect(() => {
     props.navigation.setOptions({
@@ -65,7 +67,6 @@ const NewChatScreen = (props) => {
           
           const data = await searchUser(searchValue)
           setSearchResult(data)
-          console.log(data)
           setLoading(false)
         }else{
           setSearchResult([])
@@ -99,10 +100,13 @@ const NewChatScreen = (props) => {
           )}
            {searchValue!=='' && searchResult.length>0 && !loading && (
             <View style={{flex:1, width:'100%', alignItems:'center'}}>
-              <View style={{flex:1, width:'90%'}}>
-                <FlatList data={searchResult} renderItem={({item})=>{
+              <View style={{flex:1, width:'100%', alignItems:'center'}}>
+                <FlatList style={{width:'90%'}} data={searchResult} renderItem={({item})=>{
                   return (
-                    <View style={styles.useritem}>
+                    <TouchableOpacity onPress={()=>{
+                      setSelectedUser(item)
+                      props.navigation.navigate('Home', {userid:item.userid, fullname:item.fullname, photo:item.photo})
+                    }} activeOpacity={0.8} style={styles.useritem}>
                       <View style={styles.useravatar}>
                         <Image source={{uri:item.photo}} style={styles.avatar}/>
                       </View>
@@ -110,7 +114,7 @@ const NewChatScreen = (props) => {
                         <Text numberOfLines={1} style={styles.username}>{item.fullname}</Text>
                         <Text numberOfLines={1} style={styles.useremail}>{item.email}</Text>
                       </View>
-                    </View>
+                    </TouchableOpacity>
                   )
                 }} keyExtractor={item=>item.userid}/>
               </View>
@@ -149,7 +153,7 @@ const styles = StyleSheet.create({
   notfound:{
     width:'80%',
     marginTop:-70,
-    height:'60%',
+    height:300,
     backgroundColor:'#fff',
     borderRadius:25,
     //shadow
@@ -176,15 +180,15 @@ const styles = StyleSheet.create({
     alignItems:'center',
     marginBottom:10,
     //shadow
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    // shadowColor: "#000",
+    // shadowOffset: {
+    //   width: 0,
+    //   height: 2,
+    // },
+    // shadowOpacity: 0.25,
+    // shadowRadius: 3.84,
 
-    elevation: 5,
+    // elevation: 5,
   },
   useravatar:{
     width:'20%',
