@@ -36,3 +36,32 @@ export const createChat = async (logineduserid, chatusers) => {
   }
 
 }
+
+export const sendTextMessage = async (chatid, logineduserid, messageText) => {
+  try {
+    const app = firebaseHelper()
+    const db = getFirestore(app);
+    const chatsRef = doc(db, "messages", chatid);
+    await setDoc(chatsRef, {
+      [uuid.v4()]: {
+        message: messageText,
+        type: 'text',
+        createdAt: new Date().toISOString(),
+        createdBy: logineduserid,
+      }
+    }, { merge: true });
+
+    //update the chats collection information
+    const chatsRef2 = doc(db, "chats", chatid);
+    await setDoc(chatsRef2, {
+      updatedAt: new Date().toISOString(),
+      updatedBy: logineduserid,
+      latestMessage: messageText
+    }, { merge: true });
+  }
+  catch (err) {
+    console.log(err)
+  }
+
+
+}

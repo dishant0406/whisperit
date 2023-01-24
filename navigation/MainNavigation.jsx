@@ -12,9 +12,10 @@ const Tab = createBottomTabNavigator();
 import back from '../assets/back.png'
 import SettingPage from '../components/Auth/SettingsPage';
 import NewChatScreen from '../screens/NewChatScreen';
-import { collection, doc, getDoc, getFirestore, onSnapshot } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, getFirestore, onSnapshot } from 'firebase/firestore';
 import { auth, firebaseHelper } from '../utils/firebase/firebase';
 import { useUsersChatsStore } from '../utils/zustand/zustand';
+import ProgressLoader from 'rn-progress-loader';
 
 
 const TabNavigate = () => {
@@ -47,52 +48,111 @@ const TabNavigate = () => {
 
 
 const MainNavigation = () => {
+  const [loading, setLoading] = React.useState(false)
   const unsubarray = []
   const {setUsersChats, usersChats} = useUsersChatsStore()
 
   useEffect(()=>{
+    
     const app = firebaseHelper()
     //save the userid fullname email photo to collection users with id as userid
     const db = getFirestore(app);
-    const unsub = onSnapshot(doc
-      (db, "usersChats", auth.currentUser.uid), (doc1) => {
-      const chatIdsData = doc1.data()  || {}
-      const chatIds = Object.values(chatIdsData)
-      const chatDataLocal = []
-      const usersData = []
+    setLoading(true)
 
-      chatIds.forEach(chatId=>{
-        const unsub2 = onSnapshot(doc(db, "chats", chatId), (doc2) => {
-          const chatData = doc2.data() || {}
-          const chat = {id:doc2.id,...chatData}
-          chatDataLocal.push(chat)
-          chat.users.forEach(async (e)=>{
-            if(e!==auth.currentUser.uid){
+    const unsub = onSnapshot(doc
+      (db, "usersChats", auth.currentUser.uid), async (doc1) => {
+        const chatDataLocal = []
+        let usersData = []
+        const chatIdsData = doc1.data()  || {}
+        const chatIds = Object.values(chatIdsData)
+        if(chatIds.length<1){
+          setUsersChats([])
+          setLoading(false)
+        }
+        
+
+      for (let i = 0; i < chatIds.length; i++) {
+        const chat = chatIds[i];
+        const unsub2 = onSnapshot(doc(db, "chats", chat), async (doc2) => {
+          let chatData = doc2.data() || {}
+          chatData = {id:chat, ...chatData}
+          chatDataLocal.push(chatData)
+          
+
+          for (let j = 0; j < chatData.users.length; j++) {
+            const user = chatData.users[j];
+            if(user!==auth.currentUser.uid){
               const chatref = collection(db, "users");
-              const userDoc = doc(chatref, e);
+              const userDoc = doc(chatref, user);
               const userDocData = await getDoc(userDoc);
               const userData = userDocData.data() || {}
-              usersData.push(userData)
+              // console.log('userdata',userData)
+              
+              //check if user is already in the array
+              usersData =  usersData.filter((user)=>user.userid!==userData.userid)
+              usersData.push(
+                {...userData, key:chat, latestMessage:chatData.latestMessage}
+              )
             }
-          })
+          }
+          // console.log(usersData)
+          setUsersChats(usersData)
+          setLoading(false)
+          
         })
+
         unsubarray.push(unsub2)
-
-        }
-      )
-
-      setUsersChats(usersData)
+        
+      }
 
 
+
+      // const myChatsref = collection(db, 'chats')
+      // const myChats = await getDocs(myChatsref)
+      // myChats.forEach(async (doc3) => {
+      //   const chatData = doc3.data() || {}
+      //   const chat = {id:doc3.id,...chatData}
+      //   chatDataLocal.push(chat)
+
+      //   for (let j = 0; j < chatData.users.length; j++) {
+      //     const user = chatData.users[j];
+      //     if(user!==auth.currentUser.uid){
+      //       const chatref = collection(db, "users");
+      //       const userDoc = doc(chatref, user);
+      //       const userDocData = await getDoc(userDoc);
+      //       const userData = userDocData.data() || {}
+      //       console.log('userdata',userData)
+      //       // usersData.push(userData)
+      //     }
+      //   }
+      // });
+
+     
+
+      
        
     });
+
+   
+    
 
     unsubarray.push(unsub)
 
     return ()=>{
-      unsubarray.forEach(unsub=>unsub())
+      unsubarray.forEach(unsub=>{
+        unsub()
+      })
     }
   },[])
+
+  if(loading){
+    return (
+      <ProgressLoader
+                visible={loading}
+      
+                color={"#FFFFFF"} />
+    )
+  }
 
   return (
     

@@ -11,7 +11,7 @@ import down from '../assets/thumbdown.png'
 import { auth, firebaseHelper } from '../utils/firebase/firebase';
 import { addDoc, collection, doc, getFirestore, setDoc } from 'firebase/firestore';
 import uuid from 'react-native-uuid';
-import { createChat } from '../utils/authentication/createChat';
+import { createChat, sendTextMessage } from '../utils/authentication/createChat';
 
 
 const NotAvailable = ({title, image, desc})=>{
@@ -48,18 +48,19 @@ const ChatScreen = (props) => {
 
   useEffect(()=>{
     if(chatusers){
-      console.log(chatusers)
       setChatUsers(chatusers)
     }
 
   },[props.route?.params])
 
   const handleSend = async ()=>{
+    let newchatid = undefined;
    if(!chatid){
-    const newchatid = await createChat(auth.currentUser.uid, chatUsers)
+    newchatid = await createChat(auth.currentUser.uid, chatUsers)
     setChatId(newchatid)
-    setMessageText('')
   }
+    await sendTextMessage(newchatid || chatid, auth.currentUser.uid, messageText)
+    setMessageText('')
 
   }
 
