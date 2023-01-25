@@ -14,7 +14,7 @@ import SettingPage from '../components/Auth/SettingsPage';
 import NewChatScreen from '../screens/NewChatScreen';
 import { collection, doc, getDoc, getDocs, getFirestore, onSnapshot } from 'firebase/firestore';
 import { auth, firebaseHelper } from '../utils/firebase/firebase';
-import { useUsersChatsStore } from '../utils/zustand/zustand';
+import { useUsersChatsStore, useMessagesStore } from '../utils/zustand/zustand';
 import ProgressLoader from 'rn-progress-loader';
 
 
@@ -51,6 +51,7 @@ const MainNavigation = () => {
   const [loading, setLoading] = React.useState(false)
   const unsubarray = []
   const {setUsersChats, usersChats} = useUsersChatsStore()
+  const {setMessages} = useMessagesStore()
 
   useEffect(()=>{
     
@@ -63,13 +64,30 @@ const MainNavigation = () => {
       (db, "usersChats", auth.currentUser.uid), async (doc1) => {
         const chatDataLocal = []
         let usersData = []
+        let chatsMessageData = {}
         const chatIdsData = doc1.data()  || {}
         const chatIds = Object.values(chatIdsData)
         if(chatIds.length<1){
           setUsersChats([])
           setLoading(false)
         }
+      
+      for (let i = 0; i < chatIds.length; i++) {
+        const chat = chatIds[i];
+        const unsub2 = onSnapshot(doc(db, "messages", chat), async (doc2) => {
+          let chatData = doc2.data()||{}
+          const chatMessage = Object.values(chatData)
+          chatsMessageData[chat] = chatMessage
+          setMessages(chatsMessageData)
+        })
+
         
+
+        unsubarray.push(unsub2)
+
+        
+      }
+      
 
       for (let i = 0; i < chatIds.length; i++) {
         const chat = chatIds[i];
@@ -79,7 +97,7 @@ const MainNavigation = () => {
           chatDataLocal.push(chatData)
           
 
-          for (let j = 0; j < chatData.users.length; j++) {
+          for (let j = 0; j < chatData?.users?.length; j++) {
             const user = chatData.users[j];
             if(user!==auth.currentUser.uid){
               const chatref = collection(db, "users");
@@ -91,8 +109,11 @@ const MainNavigation = () => {
               //check if user is already in the array
               usersData =  usersData.filter((user)=>user.userid!==userData.userid)
               usersData.push(
-                {...userData, key:chat, latestMessage:chatData.latestMessage}
+                {...userData, key:chat, latestMessage:chatData.latestMessage, updatedAt:chatData.updatedAt}
               )
+              //sort usersData according to usersData.updatedAt iso string the new should be on top
+              usersData.sort((a,b)=>new Date(b.updatedAt) - new Date(a.updatedAt))
+              console.log(usersData)
             }
           }
           // console.log(usersData)

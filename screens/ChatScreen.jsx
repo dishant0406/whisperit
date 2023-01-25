@@ -1,17 +1,21 @@
-import { View, Text, StyleSheet, Image, TextInput, Dimensions, ScrollView, ScrollViewBase, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native'
+import { View, Text, StyleSheet, Image, TextInput, Dimensions, ScrollView, ScrollViewBase, TouchableOpacity, KeyboardAvoidingView, Platform, TouchableWithoutFeedback } from 'react-native'
 import { Feather } from '@expo/vector-icons';
 import { Ionicons } from '@expo/vector-icons';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
 import KeyboardStickyView from 'rn-keyboard-sticky-view';
 import avatar from '../assets/avatar.png'
-import { useSelectedUserStore } from '../utils/zustand/zustand';
+import { useSelectedUserStore, useMessagesStore } from '../utils/zustand/zustand';
 import down from '../assets/thumbdown.png'
 import { auth, firebaseHelper } from '../utils/firebase/firebase';
 import { addDoc, collection, doc, getFirestore, setDoc } from 'firebase/firestore';
 import uuid from 'react-native-uuid';
 import { createChat, sendTextMessage } from '../utils/authentication/createChat';
+import { Menu, MenuOption, MenuOptions, MenuTrigger } from 'react-native-popup-menu';
+import * as Clipboard from 'expo-clipboard';
+import { renderers } from 'react-native-popup-menu';
+const { SlideInMenu } = renderers;
 
 
 const NotAvailable = ({title, image, desc})=>{
@@ -28,10 +32,94 @@ const NotAvailable = ({title, image, desc})=>{
   </ScrollView>
 }
 
+const SenderChat = ({text, time})=>{
+
+  const copyToClipboard = async () => {
+    await Clipboard.setStringAsync(text);
+  };
+
+  const menuRef = useRef(null)
+  const id = useRef(uuid.v4())
+  return (
+    <View style={styles.senderchatholder}>
+        <Menu renderer={SlideInMenu}  name={id.current} ref={menuRef}>
+        <TouchableWithoutFeedback onLongPress={()=>menuRef.current.props.ctx.menuActions.openMenu(id.current)}>
+          <View style={styles.senderchat}>
+            <Text style={styles.chatText}>{text}</Text>
+            <View style={{width:'100%', alignItems:'flex-end'}}>
+              <Text style={{fontSize:10, color:'#9a9691', fontFamily:'medium'}}>
+                {
+                  new Date(time).getHours() > 12 ?
+                  `${new Date(time).getHours()-12}:${new Date(time).getMinutes()} PM`:
+                  `${new Date(time).getHours()}:${new Date(time).getMinutes()} AM`
+                }
+              </Text>
+            </View>
+          </View>
+        </TouchableWithoutFeedback>
+        <MenuTrigger  />
+      <MenuOptions  >
+        <MenuOption style={{backgroundColor:'#f4f4f4', borderBottomColor:'red'}} onSelect={copyToClipboard} >
+          <Text style={{height:50, paddingTop:10, alignItems:'center', justifyContent:'center', textAlign:'center', fontFamily:'medium', fontSize:18}}>Copy</Text>
+        </MenuOption>
+        <MenuOption style={{backgroundColor:'#f4f4f4', borderBottomColor:'red'}} onSelect={() => alert(`Delete`)} >
+          <Text style={{height:50, paddingTop:10, alignItems:'center', justifyContent:'center', textAlign:'center', fontFamily:'medium', fontSize:18}}>Save</Text>
+        </MenuOption>
+      </MenuOptions>
+  </Menu>
+    </View>
+    
+  )
+}
+
+const RecieverChat = ({text, time})=>{
+
+  const copyToClipboard = async () => {
+    await Clipboard.setStringAsync(text);
+  };
+
+  const menuRef = useRef(null)
+  const id = useRef(uuid.v4())
+  return (
+    <View style={styles.recieverchatholder}>
+        <Menu renderer={SlideInMenu}  name={id.current} ref={menuRef}>
+        <TouchableWithoutFeedback onLongPress={()=>menuRef.current.props.ctx.menuActions.openMenu(id.current)}>
+          <View style={styles.recieverchat}>
+            <Text style={styles.chatText}>{text}</Text>
+            <View style={{width:'100%', alignItems:'flex-end'}}>
+              <Text style={{fontSize:10, color:'#9a9691', fontFamily:'medium'}}>
+                {
+                  new Date(time).getHours() > 12 ?
+                  `${new Date(time).getHours()-12}:${new Date(time).getMinutes()} PM`:
+                  `${new Date(time).getHours()}:${new Date(time).getMinutes()} AM`
+                }
+              </Text>
+            </View>
+          </View>
+          
+        </TouchableWithoutFeedback>
+        <MenuTrigger  />
+      <MenuOptions  >
+        <MenuOption style={{backgroundColor:'#f4f4f4', borderBottomColor:'red'}} onSelect={copyToClipboard} >
+          <Text style={{height:50, paddingTop:10, alignItems:'center', justifyContent:'center', textAlign:'center', fontFamily:'medium', fontSize:18}}>Copy</Text>
+        </MenuOption>
+        <MenuOption style={{backgroundColor:'#f4f4f4', borderBottomColor:'red'}} onSelect={() => alert(`Delete`)} >
+          <Text style={{height:50, paddingTop:10, alignItems:'center', justifyContent:'center', textAlign:'center', fontFamily:'medium', fontSize:18}}>Save</Text>
+        </MenuOption>
+      </MenuOptions>
+  </Menu>
+    </View>
+    
+  )
+}
+
 const ChatScreen = (props) => {
   const [chatid, setChatId] = useState(props.route?.params?.chatid)
   const {selectedUser} = useSelectedUserStore()
   const [chatUsers, setChatUsers] = useState([])
+  const {messages} = useMessagesStore()
+  const [chatMessages, setChatMessages] = useState([])
+  const scrollref = useRef(null)
 
   useEffect(()=>{
     props.navigation.setOptions({
@@ -51,7 +139,24 @@ const ChatScreen = (props) => {
       setChatUsers(chatusers)
     }
 
+    
+
   },[props.route?.params])
+
+  useEffect(()=>{
+    if(chatid){
+      let mymessages = messages[chatid]
+      if(mymessages){
+        //sort them according to messages.createdAt ISO string date
+        mymessages.sort((a,b)=>new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+        setChatMessages(mymessages)
+        // if(scrollref){
+        //   scrollref.current.scrollToEnd({animated:true})
+        // }
+      }
+      
+    }
+  },[messages[chatid], chatid])
 
   const handleSend = async ()=>{
     let newchatid = undefined;
@@ -85,28 +190,19 @@ const ChatScreen = (props) => {
             <Feather name="search" size={24} color="#5f6368" />
           </TouchableOpacity>
       </View>
-      {chatid && <KeyboardAwareScrollView scrollEnabled={true} style={styles.body}>
-        <View style={styles.senderchatholder}>
-          <View style={styles.senderchat}>
-            <Text style={styles.chatText}>Hi Henna How are you</Text>
-          </View>
-        </View>
-        <View style={styles.recieverchatholder}>
-          <View style={styles.recieverchat}>
-            <Text style={styles.chatText}> Lorem ipsum dolor sit amet consectetur adipisicing elit. At debitis esse porro a commodi provident, consequatur expedita, voluptatem nihil cum aspernatur recusandae qui eaque? Commodi, explicabo! Praesentium excepturi eaque tempora.</Text>
-          </View>
-        </View>
-        <View style={styles.senderchatholder}>
-          <View style={styles.senderchat}>
-            <Text style={styles.chatText}>Lorem ipsum dolor sit amet consectetur adipisicing elit. Quod in reprehenderit odio ad eveniet. Culpa amet facilis, hic ab eveniet laborum quasi praesentium placeat. Quidem eius aperiam cupiditate commodi similique?</Text>
-          </View>
-        </View>
-        <View style={styles.recieverchatholder}>
-          <View style={styles.recieverchat}>
-            <Text style={styles.chatText}> Lorem ipsum dolor sit amet consectetur adipisicing elit. At debitis esse porro a commodi provident, consequatur expedita, voluptatem nihil cum aspernatur recusandae qui eaque? Commodi, explicabo! Praesentium excepturi eaque tempora.</Text>
-          </View>
-        </View>
-      </KeyboardAwareScrollView>}
+      {chatid && <ScrollView onContentSizeChange={()=>scrollref.current.scrollToEnd()} ref={scrollref} scrollEnabled={true} style={styles.body}>
+       
+       {
+          chatMessages?.map((item, index)=>{
+            if(item.createdBy === auth.currentUser.uid){
+              return <SenderChat key={item.createdAt} time={item.createdAt} text={item.message}/>
+            }else{
+              return <RecieverChat key={item.createdAt} time={item.createdAt} text={item.message}/>
+            }
+          }
+          )
+       }
+      </ScrollView>}
       {!chatid && <NotAvailable title='Start whispering...' image={down} desc='You have no chat with this user, write a new message to chat'/>}
         
         
@@ -282,7 +378,7 @@ const styles = StyleSheet.create({
     padding: 15,
     marginBottom: 10,
     maxWidth: 250,
-    flexDirection:'row',
+    flexDirection:'column',
     justifyContent:'center',
     alignItems:'center'
   },
@@ -303,7 +399,7 @@ const styles = StyleSheet.create({
     padding: 15,
     marginBottom: 10,
     maxWidth: 250,
-    flexDirection:'row',
+    flexDirection:'column',
     justifyContent:'center',
     alignItems:'center'
   },

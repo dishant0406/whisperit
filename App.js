@@ -11,6 +11,7 @@ import { getAuth, signInWithCustomToken } from 'firebase/auth';
 import { auth, firebaseHelper } from './utils/firebase/firebase';
 import { getUser } from './utils/authentication/signup';
 import { decode } from 'base-64';
+import { MenuProvider } from 'react-native-popup-menu';
 
 
 SplashScreen.preventAutoHideAsync();
@@ -124,7 +125,9 @@ export default function App() {
     <SafeAreaProvider
       onLayout={onLayout}
     >
-      <AppNavigator />
+      <MenuProvider>
+        <AppNavigator />
+      </MenuProvider>
     </SafeAreaProvider>
   );
 }

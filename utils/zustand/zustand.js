@@ -39,3 +39,10 @@ export const useUsersChatsStore = create((set) => ({
   usersChats: [],
   setUsersChats: (usersChats) => set({ usersChats }),
 }));
+
+//global state to manage all the messages of all users
+export const useMessagesStore = create((set) => ({
+  messages: {},
+  setMessages: (messages) => set({ messages }),
+}));
+
