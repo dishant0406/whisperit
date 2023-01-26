@@ -27,6 +27,7 @@
     "nativewind": "^2.0.11",
     "react": "18.1.0",
     "react-native": "0.70.5",
+    "react-native-actions-sheet": "^0.8.10",
     "react-native-gesture-handler": "~2.8.0",
     "react-native-keyboard-aware-scroll-view": "^0.9.5",
     "react-native-popup-menu": "^0.16.1",

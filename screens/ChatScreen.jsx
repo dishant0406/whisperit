@@ -9,7 +9,7 @@ import avatar from '../assets/avatar.png'
 import { useSelectedUserStore, useMessagesStore, useStaredMessagesStore } from '../utils/zustand/zustand';
 import down from '../assets/thumbdown.png'
 import { auth, firebaseHelper } from '../utils/firebase/firebase';
-import { addDoc, collection, doc, getFirestore, setDoc } from 'firebase/firestore';
+import { addDoc, collection, doc, getDoc, getFirestore, setDoc } from 'firebase/firestore';
 import uuid from 'react-native-uuid';
 import { createChat, sendTextMessage, starMessage } from '../utils/authentication/createChat';
 import { Menu, MenuOption, MenuOptions, MenuTrigger } from 'react-native-popup-menu';
@@ -17,7 +17,8 @@ import * as Clipboard from 'expo-clipboard';
 import { renderers } from 'react-native-popup-menu';
 const { SlideInMenu } = renderers;
 import { AntDesign } from '@expo/vector-icons';
-
+import ActionSheet from "react-native-actions-sheet";
+import { pickImage } from '../utils/ImagePicker/ImagePickerHelper';
 
 const NotAvailable = ({title, image, desc})=>{
   return <ScrollView style={{flex:1,width:'100%', 
@@ -34,10 +35,27 @@ const NotAvailable = ({title, image, desc})=>{
 }
 
 const SenderChat = ({text, time, messageId, chatId,isStarred,replyingTo})=>{
-
+  const [replyingToName, setReplyingToName] = useState('')
   const copyToClipboard = async () => {
     await Clipboard.setStringAsync(text);
   };
+
+  useEffect(()=>{
+    const senderId = replyingTo && replyingTo.createdBy
+    const findUser = async ()=>{
+      const app = firebaseHelper()
+      const db = getFirestore(app)
+      const user = await doc(db, 'users', senderId)
+      const userDoc = await getDoc(user)
+      const userData = userDoc.data()
+      setReplyingToName(userData.fullname)
+
+    }
+
+    senderId && findUser()
+
+  },[])
+
 
   const menuRef = useRef(null)
   const id = useRef(uuid.v4())
@@ -46,6 +64,16 @@ const SenderChat = ({text, time, messageId, chatId,isStarred,replyingTo})=>{
         <Menu renderer={SlideInMenu}  name={id.current} ref={menuRef}>
         <TouchableWithoutFeedback onLongPress={()=>menuRef.current.props.ctx.menuActions.openMenu(id.current)}>
           <View style={styles.senderchat}>
+            {replyingTo && <View style={{minHeight:40,width:'100%', backgroundColor:'#fff',marginBottom:10, justifyContent:'center', paddingHorizontal:8, borderRadius:10}}>
+              <Text numberOfLines={1} style={{fontSize:14, fontFamily:'semi-bold',marginTop:5,marginBottom:-2}}>
+                {replyingToName}
+              </Text>
+              <Text style={{fontSize:16, fontFamily:'medium', color:'#9a9691'}}>
+              {replyingTo
+              ? replyingTo.message:''
+              } 
+              </Text>
+            </View>}
             <Text style={styles.chatText}>{text}</Text>
             <View style={{width:'100%', alignItems:'flex-end'}}>
               <Text style={{fontSize:10, color:'#9a9691', fontFamily:'medium'}}>
@@ -146,6 +174,8 @@ const ChatScreen = (props) => {
   const scrollref = useRef(null)
   const {staredMessages} = useStaredMessagesStore()
   const [replyingTo, setReplyingTo] = useState(null)
+  const actionSheetRef = useRef(null)
+  const [image, setImage] = useState('')
 
   const thisChatStarMessage = staredMessages?.[chatid]
 
@@ -198,13 +228,34 @@ const ChatScreen = (props) => {
 
   }
 
+  const handleImageSend = async ()=>{
+    const res = await pickImage()
+    if(res){
+      setImage(res[0].uri)
+      actionSheetRef.current?.show()
+    }else{
+      
+    }
+    
+
+  }
+   
+
   
 
   const [messageText, setMessageText] = useState('')
   return (
     <KeyboardAvoidingView style={{flex:1}} behavior={Platform.OS==='ios'?'padding':undefined} keyboardVerticalOffset={90}>
     <View style={styles.container}>
-      
+    <ActionSheet ref={actionSheetRef}>
+      <View style={{width:'100%', alignItems:'center',}}>
+        <Image source={{uri:image}} style={{width:'90%', height:300, borderRadius:10, marginVertical:20}}/>
+        <TouchableOpacity onPress={handleSend} style={{width:'90%', height:50, backgroundColor:'#111111', borderRadius:10, alignItems:'center', justifyContent:'center'}}>
+          <Text style={{color:'#fff', fontFamily:'medium', fontSize:18}}>Send</Text>
+        </TouchableOpacity>
+
+      </View>
+    </ActionSheet>
       <View style={styles.header}>
         <View style={styles.titleheader}>
           <View style={styles.icon}>
@@ -252,7 +303,7 @@ const ChatScreen = (props) => {
           </View>
         </View>}
         <View  style={styles.footer}>
-          <TouchableOpacity onPress={()=>console.log('attach')} style={styles.attach}>
+          <TouchableOpacity onPress={handleImageSend} style={styles.attach}>
             <Ionicons name="ios-attach-outline" size={28} color="#62666b" />
           </TouchableOpacity>
           <View style={styles.inputcont}>
