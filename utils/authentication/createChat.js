@@ -1,4 +1,4 @@
-import { addDoc, collection, doc, getFirestore, setDoc } from "firebase/firestore";
+import { addDoc, collection, deleteDoc, doc, getDoc, getFirestore, setDoc } from "firebase/firestore";
 import { firebaseHelper } from "../firebase/firebase";
 import uuid from 'react-native-uuid';
 
@@ -37,19 +37,25 @@ export const createChat = async (logineduserid, chatusers) => {
 
 }
 
-export const sendTextMessage = async (chatid, logineduserid, messageText) => {
+export const sendTextMessage = async (chatid, logineduserid, messageText, replyingTo) => {
   try {
     const app = firebaseHelper()
     const db = getFirestore(app);
     const chatsRef = doc(db, "messages", chatid);
-    await setDoc(chatsRef, {
-      [uuid.v4()]: {
+    let id = uuid.v4()
+    let messageObject = {
+      [id]: {
         message: messageText,
         type: 'text',
         createdAt: new Date().toISOString(),
         createdBy: logineduserid,
       }
-    }, { merge: true });
+    }
+    if (replyingTo) {
+      messageObject[id].replyingTo = replyingTo
+    }
+    await setDoc(chatsRef, messageObject
+      , { merge: true });
 
     //update the chats collection information
     const chatsRef2 = doc(db, "chats", chatid);
@@ -64,4 +70,39 @@ export const sendTextMessage = async (chatid, logineduserid, messageText) => {
   }
 
 
+}
+
+export const starMessage = async (messaageId, chatId, userId) => {
+  try {
+    const app = firebaseHelper()
+    const db = getFirestore(app);
+    const chatsRef = doc(db, "userStarredMessages", userId);
+
+    const snapshot = await getDoc(chatsRef)
+    if (snapshot.data()?.[chatId]?.[messaageId]) {
+      //delete from firestore
+      const starredMessageData = {
+        [chatId]: {
+          [messaageId]: null
+        }
+      }
+      await setDoc(chatsRef, starredMessageData, { merge: true });
+
+    }
+    else {
+      //add
+      const starredMessageData = {
+        [chatId]: {
+          [messaageId]: {
+            messaageId,
+            chatId,
+            starredAt: new Date().toISOString()
+          }
+        }
+      }
+      await setDoc(chatsRef, starredMessageData, { merge: true });
+    }
+  } catch (err) {
+    console.log(err)
+  }
 }

@@ -46,3 +46,8 @@ export const useMessagesStore = create((set) => ({
   setMessages: (messages) => set({ messages }),
 }));
 
+//global state to manage all the staredMessages of the user
+export const useStaredMessagesStore = create((set) => ({
+  staredMessages: {},
+  setStaredMessages: (staredMessages) => set({ staredMessages }),
+}));

@@ -14,7 +14,7 @@ import SettingPage from '../components/Auth/SettingsPage';
 import NewChatScreen from '../screens/NewChatScreen';
 import { collection, doc, getDoc, getDocs, getFirestore, onSnapshot } from 'firebase/firestore';
 import { auth, firebaseHelper } from '../utils/firebase/firebase';
-import { useUsersChatsStore, useMessagesStore } from '../utils/zustand/zustand';
+import { useUsersChatsStore, useMessagesStore, useStaredMessagesStore } from '../utils/zustand/zustand';
 import ProgressLoader from 'rn-progress-loader';
 
 
@@ -52,6 +52,7 @@ const MainNavigation = () => {
   const unsubarray = []
   const {setUsersChats, usersChats} = useUsersChatsStore()
   const {setMessages} = useMessagesStore()
+  const {setStaredMessages} = useStaredMessagesStore()
 
   useEffect(()=>{
     
@@ -65,6 +66,7 @@ const MainNavigation = () => {
         const chatDataLocal = []
         let usersData = []
         let chatsMessageData = {}
+        let starMessageData = {}
         const chatIdsData = doc1.data()  || {}
         const chatIds = Object.values(chatIdsData)
         if(chatIds.length<1){
@@ -76,8 +78,14 @@ const MainNavigation = () => {
         const chat = chatIds[i];
         const unsub2 = onSnapshot(doc(db, "messages", chat), async (doc2) => {
           let chatData = doc2.data()||{}
+          const ObjectKeys = Object.keys(chatData)
           const chatMessage = Object.values(chatData)
+          //set chatMessage[j].key = ObjectKeys[j]
+          for (let j = 0; j < chatMessage.length; j++) {
+            chatMessage[j].key = ObjectKeys[j]
+          }
           chatsMessageData[chat] = chatMessage
+
           setMessages(chatsMessageData)
         })
 
@@ -87,6 +95,24 @@ const MainNavigation = () => {
 
         
       }
+
+      for (let i = 0; i < chatIds.length; i++) {
+        const chat = chatIds[i];
+        const unsub2 = onSnapshot(doc(db, "userStarredMessages", auth.currentUser.uid), async (doc2) => {
+          let chatData = doc2.data()||{}
+          setStaredMessages(chatData)
+        })
+
+
+
+        unsubarray.push(unsub2)
+      }
+
+
+
+
+      //getdoc
+
       
 
       for (let i = 0; i < chatIds.length; i++) {
@@ -113,7 +139,6 @@ const MainNavigation = () => {
               )
               //sort usersData according to usersData.updatedAt iso string the new should be on top
               usersData.sort((a,b)=>new Date(b.updatedAt) - new Date(a.updatedAt))
-              console.log(usersData)
             }
           }
           // console.log(usersData)

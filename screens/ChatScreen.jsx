@@ -6,16 +6,17 @@ import React, { useEffect, useRef, useState } from 'react'
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
 import KeyboardStickyView from 'rn-keyboard-sticky-view';
 import avatar from '../assets/avatar.png'
-import { useSelectedUserStore, useMessagesStore } from '../utils/zustand/zustand';
+import { useSelectedUserStore, useMessagesStore, useStaredMessagesStore } from '../utils/zustand/zustand';
 import down from '../assets/thumbdown.png'
 import { auth, firebaseHelper } from '../utils/firebase/firebase';
 import { addDoc, collection, doc, getFirestore, setDoc } from 'firebase/firestore';
 import uuid from 'react-native-uuid';
-import { createChat, sendTextMessage } from '../utils/authentication/createChat';
+import { createChat, sendTextMessage, starMessage } from '../utils/authentication/createChat';
 import { Menu, MenuOption, MenuOptions, MenuTrigger } from 'react-native-popup-menu';
 import * as Clipboard from 'expo-clipboard';
 import { renderers } from 'react-native-popup-menu';
 const { SlideInMenu } = renderers;
+import { AntDesign } from '@expo/vector-icons';
 
 
 const NotAvailable = ({title, image, desc})=>{
@@ -32,7 +33,7 @@ const NotAvailable = ({title, image, desc})=>{
   </ScrollView>
 }
 
-const SenderChat = ({text, time})=>{
+const SenderChat = ({text, time, messageId, chatId,isStarred,replyingTo})=>{
 
   const copyToClipboard = async () => {
     await Clipboard.setStringAsync(text);
@@ -53,6 +54,15 @@ const SenderChat = ({text, time})=>{
                   `${new Date(time).getHours()-12}:${new Date(time).getMinutes()} PM`:
                   `${new Date(time).getHours()}:${new Date(time).getMinutes()} AM`
                 }
+                {
+                  '   '
+                }
+                {
+                  //isStarred then show a star
+                  isStarred ?
+                  <AntDesign name="staro" size={14} color="#9a9691" />:
+                  null
+                }
               </Text>
             </View>
           </View>
@@ -62,8 +72,8 @@ const SenderChat = ({text, time})=>{
         <MenuOption style={{backgroundColor:'#f4f4f4', borderBottomColor:'red'}} onSelect={copyToClipboard} >
           <Text style={{height:50, paddingTop:10, alignItems:'center', justifyContent:'center', textAlign:'center', fontFamily:'medium', fontSize:18}}>Copy</Text>
         </MenuOption>
-        <MenuOption style={{backgroundColor:'#f4f4f4', borderBottomColor:'red'}} onSelect={() => alert(`Delete`)} >
-          <Text style={{height:50, paddingTop:10, alignItems:'center', justifyContent:'center', textAlign:'center', fontFamily:'medium', fontSize:18}}>Save</Text>
+        <MenuOption style={{backgroundColor:'#f4f4f4', borderBottomColor:'red'}} onSelect={() => starMessage(messageId,chatId, auth.currentUser.uid )} >
+          <Text style={{height:50, paddingTop:10, alignItems:'center', justifyContent:'center', textAlign:'center', fontFamily:'medium', fontSize:18}}>{isStarred?'Unstar Message':'Star Message'}</Text>
         </MenuOption>
       </MenuOptions>
   </Menu>
@@ -72,7 +82,7 @@ const SenderChat = ({text, time})=>{
   )
 }
 
-const RecieverChat = ({text, time})=>{
+const RecieverChat = ({text, time, messageId, chatId,isStarred,setReplyingTo, item})=>{
 
   const copyToClipboard = async () => {
     await Clipboard.setStringAsync(text);
@@ -88,10 +98,21 @@ const RecieverChat = ({text, time})=>{
             <Text style={styles.chatText}>{text}</Text>
             <View style={{width:'100%', alignItems:'flex-end'}}>
               <Text style={{fontSize:10, color:'#9a9691', fontFamily:'medium'}}>
+               
+                
                 {
                   new Date(time).getHours() > 12 ?
                   `${new Date(time).getHours()-12}:${new Date(time).getMinutes()} PM`:
                   `${new Date(time).getHours()}:${new Date(time).getMinutes()} AM`
+                }
+                {
+                  '   '
+                }
+                 {
+                  //isStarred then show a star
+                  isStarred ?
+                  <AntDesign name="staro" size={14} color="#9a9691" />:
+                  null
                 }
               </Text>
             </View>
@@ -103,8 +124,11 @@ const RecieverChat = ({text, time})=>{
         <MenuOption style={{backgroundColor:'#f4f4f4', borderBottomColor:'red'}} onSelect={copyToClipboard} >
           <Text style={{height:50, paddingTop:10, alignItems:'center', justifyContent:'center', textAlign:'center', fontFamily:'medium', fontSize:18}}>Copy</Text>
         </MenuOption>
-        <MenuOption style={{backgroundColor:'#f4f4f4', borderBottomColor:'red'}} onSelect={() => alert(`Delete`)} >
-          <Text style={{height:50, paddingTop:10, alignItems:'center', justifyContent:'center', textAlign:'center', fontFamily:'medium', fontSize:18}}>Save</Text>
+        <MenuOption style={{backgroundColor:'#f4f4f4', borderBottomColor:'red'}} onSelect={() => starMessage(messageId,chatId, auth.currentUser.uid )} >
+          <Text style={{height:50, paddingTop:10, alignItems:'center', justifyContent:'center', textAlign:'center', fontFamily:'medium', fontSize:18}}>{isStarred?'Unstar Message':'Star Message'}</Text>
+        </MenuOption>
+        <MenuOption style={{backgroundColor:'#f4f4f4', borderBottomColor:'red'}} onSelect={() => setReplyingTo(item)} >
+          <Text style={{height:50, paddingTop:10, alignItems:'center', justifyContent:'center', textAlign:'center', fontFamily:'medium', fontSize:18}}>Reply</Text>
         </MenuOption>
       </MenuOptions>
   </Menu>
@@ -120,6 +144,10 @@ const ChatScreen = (props) => {
   const {messages} = useMessagesStore()
   const [chatMessages, setChatMessages] = useState([])
   const scrollref = useRef(null)
+  const {staredMessages} = useStaredMessagesStore()
+  const [replyingTo, setReplyingTo] = useState(null)
+
+  const thisChatStarMessage = staredMessages?.[chatid]
 
   useEffect(()=>{
     props.navigation.setOptions({
@@ -164,8 +192,9 @@ const ChatScreen = (props) => {
     newchatid = await createChat(auth.currentUser.uid, chatUsers)
     setChatId(newchatid)
   }
-    await sendTextMessage(newchatid || chatid, auth.currentUser.uid, messageText)
+    await sendTextMessage(newchatid || chatid, auth.currentUser.uid, messageText, replyingTo && replyingTo.key)
     setMessageText('')
+    setReplyingTo(null)
 
   }
 
@@ -195,9 +224,9 @@ const ChatScreen = (props) => {
        {
           chatMessages?.map((item, index)=>{
             if(item.createdBy === auth.currentUser.uid){
-              return <SenderChat key={item.createdAt} time={item.createdAt} text={item.message}/>
+              return <SenderChat replyingTo={item.replyingTo && chatMessages.find(i=>i.key===item.replyingTo)} key={item.createdAt} isStarred={thisChatStarMessage?.[item.key]?.messaageId} time={item.createdAt} messageId={item.key} chatId={chatid} text={item.message}/>
             }else{
-              return <RecieverChat key={item.createdAt} time={item.createdAt} text={item.message}/>
+              return <RecieverChat setReplyingTo={setReplyingTo} item={item} key={item.createdAt} isStarred={thisChatStarMessage?.[item.key]?.messaageId} time={item.createdAt} messageId={item.key} chatId={chatid} text={item.message}/>
             }
           }
           )
@@ -207,22 +236,38 @@ const ChatScreen = (props) => {
         
         
 
-      <View  style={styles.footer}>
-        <TouchableOpacity onPress={()=>console.log('attach')} style={styles.attach}>
-          <Ionicons name="ios-attach-outline" size={28} color="#62666b" />
-        </TouchableOpacity>
-        <View style={styles.inputcont}>
-          <View>
-            <TextInput multiline={true}  value={messageText} onChangeText={(e)=>setMessageText(e)} style={styles.input} placeholder='Message...'/>
+      <View>
+       {replyingTo &&  <View style={{backgroundColor:'#f4f4f4', minHeight:70, width:'100%',  borderTopWidth: 1,alignItems:'center',
+          borderTopColor: '#e8e8e8',}}>
+          <View style={{ minHeight:60, justifyContent:'flex-start', width:'90%',backgroundColor:'#fff', marginVertical:10, paddingHorizontal:10, borderRadius:10 }}>
+            <View style={{width:'100%', flexDirection:'row', justifyContent:'space-between'}}>
+              <Text style={{fontFamily:'medium', marginTop:5, color:"#62666b"}}>
+                Replying to
+              </Text>
+              <Ionicons onPress={()=>setReplyingTo(null)} style={{marginTop:5}} name='ios-close-circle-outline' size={20} color='#62666b'/>
+            </View>
+            <Text style={{fontFamily:'medium', fontSize:18, color:'#5b647e'}}>
+              {replyingTo.message}
+            </Text>
           </View>
-          <TouchableOpacity onPress={()=>console.log('sticker')} style={styles.sticker}>
-            <MaterialCommunityIcons name="sticker-circle-outline" size={24} color="#989b9d" />
+        </View>}
+        <View  style={styles.footer}>
+          <TouchableOpacity onPress={()=>console.log('attach')} style={styles.attach}>
+            <Ionicons name="ios-attach-outline" size={28} color="#62666b" />
+          </TouchableOpacity>
+          <View style={styles.inputcont}>
+            <View>
+              <TextInput multiline={true}  value={messageText} onChangeText={(e)=>setMessageText(e)} style={styles.input} placeholder='Message...'/>
+            </View>
+            <TouchableOpacity onPress={()=>console.log('sticker')} style={styles.sticker}>
+              <MaterialCommunityIcons name="sticker-circle-outline" size={24} color="#989b9d" />
+            </TouchableOpacity>
+          </View>
+          <TouchableOpacity onPress={messageText!==''?handleSend:()=>{}} style={styles.mic}>
+            {messageText===''?<Ionicons name="ios-mic-outline" size={28} color="#62666b" />:
+            <Ionicons name="ios-send-outline" size={28} color="#62666b" />}
           </TouchableOpacity>
         </View>
-        <TouchableOpacity onPress={messageText!==''?handleSend:()=>{}} style={styles.mic}>
-          {messageText===''?<Ionicons name="ios-mic-outline" size={28} color="#62666b" />:
-          <Ionicons name="ios-send-outline" size={28} color="#62666b" />}
-        </TouchableOpacity>
       </View>
 
       
