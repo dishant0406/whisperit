@@ -37,7 +37,7 @@ export const createChat = async (logineduserid, chatusers) => {
 
 }
 
-export const sendTextMessage = async (chatid, logineduserid, messageText, replyingTo) => {
+export const sendTextMessage = async (chatid, logineduserid, messageText, replyingTo, imageUrl = null) => {
   try {
     const app = firebaseHelper()
     const db = getFirestore(app);
@@ -45,7 +45,7 @@ export const sendTextMessage = async (chatid, logineduserid, messageText, replyi
     let id = uuid.v4()
     let messageObject = {
       [id]: {
-        message: messageText,
+        message: imageUrl ? 'Image' : messageText,
         type: 'text',
         createdAt: new Date().toISOString(),
         createdBy: logineduserid,
@@ -53,6 +53,9 @@ export const sendTextMessage = async (chatid, logineduserid, messageText, replyi
     }
     if (replyingTo) {
       messageObject[id].replyingTo = replyingTo
+    }
+    if (imageUrl) {
+      messageObject[id].imageUrl = imageUrl
     }
     await setDoc(chatsRef, messageObject
       , { merge: true });

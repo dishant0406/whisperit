@@ -15,7 +15,7 @@ export const pickImage = async () => {
     mediaTypes: ImagePicker.MediaTypeOptions.Images,
     allowsEditing: true,
     aspect: [1, 1],
-    quality: 0.5,
+    quality: 0.2,
   });
 
 
@@ -25,7 +25,30 @@ export const pickImage = async () => {
   }
 }
 
-export const uploadImage = async (image) => {
+export const cameraImage = async () => {
+  //check if permission is there if no then request permission
+  const { granted } = await ImagePicker.requestCameraPermissionsAsync();
+
+  if (!granted) {
+    alert('Sorry, we need camera roll permissions to make this work!');
+  }
+
+  //launch image picker
+  let result = await ImagePicker.launchCameraAsync({
+    mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    allowsEditing: true,
+    aspect: [1, 1],
+    quality: 0.2,
+  });
+
+
+
+  if (!result.canceled) {
+    return result.assets;
+  }
+}
+
+export const uploadImage = async (image, isChatImage = false) => {
   const blob = await new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.onload = function () {
@@ -39,9 +62,11 @@ export const uploadImage = async (image) => {
     xhr.send(null);
   })
 
+  let pathFolder = isChatImage ? 'chatImages/' : 'images/'
+
   const app = firebaseHelper();
   const storage = getStorage(app);
-  const reff = ref(storage, 'images/' + uuid.v4());
+  const reff = ref(storage, pathFolder + uuid.v4());
   const snapshot = await uploadBytesResumable(reff, blob);
   return await getDownloadURL(reff)
 

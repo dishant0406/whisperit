@@ -51,3 +51,10 @@ export const useStaredMessagesStore = create((set) => ({
   staredMessages: {},
   setStaredMessages: (staredMessages) => set({ staredMessages }),
 }));
+
+//global state to manage all chatids
+export const useChatIdsStore = create((set) => ({
+  chatIds: [],
+  setChatIds: (chatIds) => set({ chatIds }),
+}));
+

@@ -14,7 +14,7 @@ import SettingPage from '../components/Auth/SettingsPage';
 import NewChatScreen from '../screens/NewChatScreen';
 import { collection, doc, getDoc, getDocs, getFirestore, onSnapshot } from 'firebase/firestore';
 import { auth, firebaseHelper } from '../utils/firebase/firebase';
-import { useUsersChatsStore, useMessagesStore, useStaredMessagesStore } from '../utils/zustand/zustand';
+import { useUsersChatsStore, useMessagesStore, useStaredMessagesStore, useChatIdsStore } from '../utils/zustand/zustand';
 import ProgressLoader from 'rn-progress-loader';
 
 
@@ -53,6 +53,7 @@ const MainNavigation = () => {
   const {setUsersChats, usersChats} = useUsersChatsStore()
   const {setMessages} = useMessagesStore()
   const {setStaredMessages} = useStaredMessagesStore()
+  const {setChatIds} = useChatIdsStore()
 
   useEffect(()=>{
     
@@ -73,6 +74,7 @@ const MainNavigation = () => {
           setUsersChats([])
           setLoading(false)
         }
+        setChatIds(chatIds)
       
       for (let i = 0; i < chatIds.length; i++) {
         const chat = chatIds[i];
@@ -88,14 +90,9 @@ const MainNavigation = () => {
 
           setMessages(chatsMessageData)
         })
-
-        
-
         unsubarray.push(unsub2)
-
         
       }
-
       for (let i = 0; i < chatIds.length; i++) {
         const chat = chatIds[i];
         const unsub2 = onSnapshot(doc(db, "userStarredMessages", auth.currentUser.uid), async (doc2) => {
