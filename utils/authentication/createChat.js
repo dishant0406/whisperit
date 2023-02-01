@@ -1,6 +1,7 @@
 import { addDoc, collection, deleteDoc, doc, getDoc, getFirestore, setDoc } from "firebase/firestore";
 import { firebaseHelper } from "../firebase/firebase";
 import uuid from 'react-native-uuid';
+import { getUserPushTokens } from "./signup";
 
 
 export const createChat = async (logineduserid, chatusers) => {
@@ -37,7 +38,7 @@ export const createChat = async (logineduserid, chatusers) => {
 
 }
 
-export const sendTextMessage = async (chatid, logineduserid, messageText, replyingTo, imageUrl = null) => {
+export const sendTextMessage = async (chatid, userDetails, messageText, replyingTo, imageUrl = null, chatUsers) => {
   try {
     const app = firebaseHelper()
     const db = getFirestore(app);
@@ -48,7 +49,7 @@ export const sendTextMessage = async (chatid, logineduserid, messageText, replyi
         message: imageUrl ? 'Image' : messageText,
         type: 'text',
         createdAt: new Date().toISOString(),
-        createdBy: logineduserid,
+        createdBy: userDetails.userid,
       }
     }
     if (replyingTo) {
@@ -64,9 +65,11 @@ export const sendTextMessage = async (chatid, logineduserid, messageText, replyi
     const chatsRef2 = doc(db, "chats", chatid);
     await setDoc(chatsRef2, {
       updatedAt: new Date().toISOString(),
-      updatedBy: logineduserid,
+      updatedBy: userDetails.userid,
       latestMessage: messageText
     }, { merge: true });
+
+    await sendPushNotificationForUsers(chatUsers, userDetails.fullname, imageUrl ? 'Image' : messageText)
   }
   catch (err) {
     console.log(err)
@@ -108,4 +111,27 @@ export const starMessage = async (messaageId, chatId, userId) => {
   } catch (err) {
     console.log(err)
   }
+}
+
+const sendPushNotificationForUsers = (chatUsers, title, body) => {
+  chatUsers.forEach(async uid => {
+    console.log("test");
+    const tokens = await getUserPushTokens(uid);
+
+    for (const key in tokens) {
+      const token = tokens[key];
+
+      await fetch("https://exp.host/--/api/v2/push/send", {
+        method: "POST",
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          to: token,
+          title,
+          body
+        })
+      })
+    }
+  })
 }

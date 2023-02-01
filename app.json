@@ -4,7 +4,7 @@
     "slug": "wishperit",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/ios/iTunesArtwork@2x.png",
     "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/whisperitt.png",
@@ -18,22 +18,32 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.whisperit.app"
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#FFFFFF"
+        "foregroundImage": "./assets/android/playstore-icon.png",
+        "backgroundColor": "#101010"
       },
       "package": "com.whisperit.app"
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/android/ic_launcher-web.png"
     },
     "extra": {
       "eas": {
         "projectId": "108a7a00-d47f-4369-ad15-6faca75fc7f2"
       }
-    }
+    },
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/ios/AppIcon.appiconset/Icon-App-29x29@1x.png",
+          "color": "#ffffff"
+        }
+      ]
+    ]
   }
 }

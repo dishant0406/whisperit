@@ -6,7 +6,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
 import KeyboardStickyView from 'rn-keyboard-sticky-view';
 import avatar from '../assets/avatar.png'
-import { useSelectedUserStore, useMessagesStore, useStaredMessagesStore } from '../utils/zustand/zustand';
+import { useSelectedUserStore, useMessagesStore, useStaredMessagesStore, useUserDetailsStore } from '../utils/zustand/zustand';
 import down from '../assets/thumbdown.png'
 import { auth, firebaseHelper } from '../utils/firebase/firebase';
 import { addDoc, collection, doc, getDoc, getFirestore, setDoc } from 'firebase/firestore';
@@ -76,7 +76,7 @@ const SenderChat = ({text, time, messageId, chatId,isStarred,replyingTo,item})=>
               </Text>
             </View>}
             {!item.imageUrl && <Text style={styles.chatText}>{text}</Text>}
-            {item.imageUrl && <Image source={{uri:item.imageUrl}} style={{width:Dimensions.get('window').width/2, height:Dimensions.get('window').width/2, borderRadius:10}}/>}
+            {item.imageUrl && <Image source={{uri:item.imageUrl}} style={{width:220, height:Dimensions.get('window').width/2, borderRadius:10}}/>}
             <View style={{width:'100%', alignItems:'flex-end'}}>
               <Text style={{fontSize:10, color:'#9a9691', fontFamily:'medium'}}>
                 {
@@ -208,6 +208,7 @@ const ChatScreen = (props) => {
   const id = useRef(uuid.v4())
   const [image, setImage] = useState('')
   const [uploading, setUploading] = useState(false)
+  const {userDetails, setUserDetails} = useUserDetailsStore()
 
   const thisChatStarMessage = staredMessages?.[chatid]
 
@@ -254,7 +255,7 @@ const ChatScreen = (props) => {
     newchatid = await createChat(auth.currentUser.uid, chatUsers)
     setChatId(newchatid)
   }
-    await sendTextMessage(newchatid || chatid, auth.currentUser.uid, messageText, replyingTo && replyingTo.key)
+    await sendTextMessage(newchatid || chatid, userDetails, messageText, replyingTo && replyingTo.key, null,chatUsers)
     setMessageText('')
     setReplyingTo(null)
 
@@ -288,7 +289,7 @@ const ChatScreen = (props) => {
          newchatid = await createChat(auth.currentUser.uid, chatUsers)
          setChatId(newchatid)
        }
-         await sendTextMessage(newchatid || chatid, auth.currentUser.uid, messageText, replyingTo && replyingTo.key, res)
+         await sendTextMessage(newchatid || chatid, userDetails, messageText, replyingTo && replyingTo.key, res, chatUsers)
          setMessageText('')
          setReplyingTo(null)
       }
@@ -588,7 +589,9 @@ const styles = StyleSheet.create({
     maxWidth: 250,
     flexDirection:'column',
     justifyContent:'center',
-    alignItems:'center'
+    alignItems:'center',
+    overflow:'hidden',
+    paddingHorizontal:15
   },
   chatText: {
     fontSize: 18,
@@ -609,7 +612,8 @@ const styles = StyleSheet.create({
     maxWidth: 250,
     flexDirection:'column',
     justifyContent:'center',
-    alignItems:'center'
+    alignItems:'center',
+    overflow:'hidden'
   },
   notfound:{
     width:'80%',

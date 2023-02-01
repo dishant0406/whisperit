@@ -11,6 +11,7 @@ import { getAuth, createUserWithEmailAndPassword, updateEmail } from "firebase/a
 import { getDoc, getFirestore } from "firebase/firestore";
 import { collection, doc, setDoc } from "firebase/firestore";
 import { pickImage, uploadImage } from '../../utils/ImagePicker/ImagePickerHelper';
+import { removePushToken } from '../../utils/authentication/signup';
 
 
 const InputField = ({defaultValue, icon, type})=>{
@@ -91,8 +92,10 @@ const InputField = ({defaultValue, icon, type})=>{
 
 const Logout = ()=>{
   const {setUser} = useAuthStore()
+  const {userDetails, setUserDetails} = useUserDetailsStore()
   const handleLogout = async ()=>{
     await auth.signOut()
+    await removePushToken(userDetails)
     setUser({
       userid: null,
       token: null,

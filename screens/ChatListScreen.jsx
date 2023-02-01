@@ -42,17 +42,22 @@ const ChatListScreen = (props) => {
     useEffect(()=>{
       //userid from the params
       const userid = props.route?.params?.userid
+      const chatid = props.route?.params?.chatid
       if(userid){
         const chatusers = [userid, auth.currentUser.uid]
         props.navigation.navigate('Chat',{chatusers})
+      }
+      if(chatid){
+        const chatusers = props.route?.params?.chatusers
+        props.navigation.navigate('Chat',{chatusers,chatid})
       }
     },[props.route?.params])
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity onPress={() => props.navigation.navigate('AddChat', {isGroupChat:true})} style={{width:'100%'}}>
+      {/* <TouchableOpacity onPress={() => props.navigation.navigate('AddChat', {isGroupChat:true})} style={{width:'100%'}}>
           <Text style={{fontSize:18, fontFamily:'medium', padding:5, marginLeft:18}}>New Group</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       <View style={{flex:1, width:'100%', alignItems:'center'}}>
         
                 <FlatList style={{width:'90%'}} data={usersChats} renderItem={({item})=>{

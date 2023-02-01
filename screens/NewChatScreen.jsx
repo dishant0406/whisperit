@@ -57,7 +57,7 @@ const NewChatScreen = (props) => {
           // console.log(data.users, selectedUser.userid)
           if(data.users.includes(selectedUser.userid)){
             const chatusers = [selectedUser.userid, auth.currentUser.uid]
-            props.navigation.navigate('Chat',{chatusers,chatid:item})
+             props.navigation.navigate('Home',{chatusers,chatid:item})
             found=true
           }
         }
@@ -102,7 +102,7 @@ const NewChatScreen = (props) => {
       headerShadowVisible: false,
 
     });
-    },[seletedUsers])
+    },[seletedUsers,groupName])
 
     useEffect(()=>{
        setLoading(true)
@@ -156,7 +156,7 @@ const NewChatScreen = (props) => {
           // console.log(data.users, selectedUser.userid)
           if(data.users.includes(item.userid)){
             const chatusers = [item.userid, auth.currentUser.uid]
-            props.navigation.navigate('Chat',{chatusers,chatid:thischatid})
+            props.navigation.navigate('Home',{chatusers,chatid:thischatid})
             found=true
           }
         }
